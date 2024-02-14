@@ -1,0 +1,14 @@
+[project]
+name = "claude"
+version = "0.1"
+description = "Covariance Linkage Assimilation for Unobserved Data Exploration"
+readme = "README.md"
+license = {file = "LICENSE"}
+authors = [
+	{name = "yy-harashima"}
+]
+dependencies = [
+	     "numpy",
+	     "scipy",
+	     "pandas",
+]
