@@ -170,6 +170,10 @@ class CLAUDE:
         self.__innerAcquisitionFunction = []
         self.timeCalcPostProb = 0.0
 
+        if((self.nDescriptor < 0) or (self.nTarget < 0)):
+            print('Error: {0}, nDescriptor and nTarget must be positive values.'.format(labelFunction))
+            sys.exit()
+
         if((self.nDescriptor > 0) ^ (self.nTarget > 0)):
             print('Error: {0}, nDescriptor and nTarget must be given simultaneously.'.format(labelFunction))
             sys.exit()
