@@ -1,6 +1,6 @@
 [project]
 name = "claude"
-version = "0.1"
+version = "0.2"
 description = "Covariance Linkage Assimilation for Unobserved Data Exploration"
 readme = "README.md"
 license = {file = "LICENSE"}

@@ -72,9 +72,9 @@ class CLAUDE:
     #
     # degreePolynomialTarget : Same expression as degreePolynomialDescriptor, 
     #       but for target variables.
-    #       Default value is [[[1,0],[0,1]]].
+    #       Default value is [[1,0],[0,1]].
     #       Note that diagonal components are automatically activated.
-    #       In contrast to degreePolynomialTarget, [0,0] is not included.
+    #       In contrast to degreePolynomialDescriptor, [0,0] is not included.
     #
     # degreeActiveDescriptor : Pairs of degree for descriptors and degree for 
     #       target variables. ex.) [[[0,0,0],[0,1]],[[0,0,1],[0,1]]]. This
@@ -170,6 +170,10 @@ class CLAUDE:
         self.__innerAcquisitionFunction = []
         self.timeCalcPostProb = 0.0
 
+        self.flagLoadedModelParameter = False
+        self.flagLoadedCovarianceMatrix = False
+        self.flagInitialized = False
+
         if((self.nDescriptor < 0) or (self.nTarget < 0)):
             print('Error: {0}, nDescriptor and nTarget must be positive values.'.format(labelFunction))
             sys.exit()
@@ -180,12 +184,12 @@ class CLAUDE:
         elif((self.nDescriptor > 0) or (self.nTarget > 0)):
             ## Descriptor.
             ## Component of descriptor.
-            if (self.flagLinearModel):
+            if ((self.flagLinearModel) or (degreePolynomialDescriptor is None)):
                 self.dimensionDescriptor = self.nDescriptor + 1
                 self.degreePolynomialDescriptor = np.zeros((self.dimensionDescriptor,self.nDescriptor),dtype=int)
                 for i in range(1,self.dimensionDescriptor):
                     self.degreePolynomialDescriptor[i,i-1] = 1
-            elif (not (degreePolynomialDescriptor is None)):
+            else:
                 if (degreePolynomialDescriptor.shape[1] != self.nDescriptor):
                     print('Error: shape of degreePolynomialDescriptor is illegal')
                     sys.exit()
@@ -202,7 +206,10 @@ class CLAUDE:
 
             ## Target variable.
             ## Component of target variable.
-            if (not (degreePolynomialTarget is None)):
+            if (degreePolynomialTarget is None):
+                self.degreePolynomialTarget = np.array([[int(i is j) for i in range(self.nTarget)] for j in range(self.nTarget)])
+                self.dimensionTarget = self.nTarget
+            else:
                 # In the current version, multiple components are not allowed for 
                 # target variables, 2022/02/16.
                 if (degreePolynomialTarget.shape[1] != self.nTarget):
@@ -213,18 +220,19 @@ class CLAUDE:
                 if(self.dimensionTarget != self.nTarget):
                     print('Error: polynomial for target variable is not yet implemented in the current version.')
                     sys.exit()
-                # Set acquisition function pointer.
-                self.__innerAcquisitionFunction = [None for i in range(self.dimensionTarget)]
-                if (self.modeAcquisitionFunction is None):
-                    self.modeAcquisitionFunction = [0 for i in range(self.dimensionTarget)]
-                    self.modeAcquisitionFunction[-1] = 1
-                elif (len(self.modeAcquisitionFunction) != self.dimensionTarget):
-                    print('Error: {0}, modeAcquisitionFunction.'.format(labelFunction))
-                    sys.exit()
-                self.__setInnerAcquisitionFunction()
-                # Set index of primary target variable.
-                if (self.indexTargetPrimary < 0):
-                    self.indexTargetPrimary = self.dimensionTarget-1
+
+            # Set acquisition function pointer.
+            self.__innerAcquisitionFunction = [None for i in range(self.dimensionTarget)]
+            if (self.modeAcquisitionFunction is None):
+                self.modeAcquisitionFunction = [0 for i in range(self.dimensionTarget)]
+                self.modeAcquisitionFunction[-1] = 1
+            elif (len(self.modeAcquisitionFunction) != self.dimensionTarget):
+                print('Error: {0}, modeAcquisitionFunction.'.format(labelFunction))
+                sys.exit()
+            self.__setInnerAcquisitionFunction()
+            # Set index of primary target variable.
+            if (self.indexTargetPrimary < 0):
+                self.indexTargetPrimary = self.dimensionTarget-1
 
             self.dimension = self.dimensionDescriptor + self.dimensionTarget
 
@@ -339,13 +347,10 @@ class CLAUDE:
             self.precisionMatrixMax = np.identity(self.dimension, dtype=float)
             self.coef_ = np.zeros((self.dimensionTarget,self.dimensionDescriptor), dtype=float)
             self.targetMax = -1e16 * np.ones(self.dimensionTarget, dtype=float)
-            self.modeAcquisitionFunction = [0 for i in range(self.dimensionTarget)]
-            self.modeAcquisitionFunction[-1] = 1
-            self.__innerAcquisitionFunction = [None for i in range(self.dimensionTarget)]
-            self.__setInnerAcquisitionFunction()
-            if (self.indexTargetPrimary < 0):
-                self.indexTargetPrimary = self.dimensionTarget-1
-            self.widthMonteCarlo = self.widthMeanMonteCarlo0*np.ones(self.nActiveVariable, dtype=float)
+            if (self.widthMonteCarlo is None):
+                self.widthMonteCarlo = self.widthMeanMonteCarlo0*np.ones(self.nActiveVariable, dtype=float)
+
+            self.flagInitialized = True
         return
 
     ### Load model parameters from an xml file.
@@ -440,15 +445,15 @@ class CLAUDE:
         nodes = header.getElementsByTagName('ActiveVariable')
         for node in nodes:
             idx1 = int(node.getAttribute('index').split()[0])
-            if (idx1 > self.dimensionTarget):
+            if (idx1 >= self.dimensionTarget):
                 print('Error in {0}: illeagal target index of ActiveVariable.'.format(labelFunction))
                 sys.exit()
             idx2 = int(node.firstChild.nodeValue.split()[0])
-            if (idx2 > self.dimension):
+            if (idx2 >= self.dimension):
                 print('Error in {0}: illeagal index of ActiveVariable.'.format(labelFunction))
                 sys.exit()
             self.activeVariable[idx1,idx2] = True
-            if (idx2 > self.dimensionDescriptor):
+            if (idx2 >= self.dimensionDescriptor):
                 self.activeVariable[idx2 - self.dimensionDescriptor,idx1 + self.dimensionDescriptor] = True
 
         # Inactive variable for each target.
@@ -555,6 +560,7 @@ class CLAUDE:
         # else:
         #     self.standardizeTarget = []
 
+        self.flagLoadedModelParameter = True
         return
 
     def saveModelParameterToFile(self, \
@@ -804,6 +810,9 @@ class CLAUDE:
             for node in nodes:
                 idx = int(node.getAttribute('index'))
                 self.targetMax[idx] = float(node.firstChild.nodeValue.split()[0])
+
+        self.flagLoadedCovarianceMatrix = True
+        self.flagInitialized = (self.flagLoadedModelParameter or self.flagLoadedCovarianceMatrix)
         return
 
     def saveCovarianceMatrixToFile(self, \
@@ -972,6 +981,9 @@ class CLAUDE:
     ###
     def fit(self, X, Y):
         labelFunction = 'fit'
+        if(not self.flagInitialized):
+            print('Error in {0}: instance is not initialized.'.format(labelFunction))
+            sys.exit()
         if(X.ndim != 2):
             print('Error in {0}: dimension of descriptor sample is not 2, but {1}.'.format(labelFunction,X.ndim))
             sys.exit()
@@ -990,6 +1002,10 @@ class CLAUDE:
     ### Find the Lambda such that the maximum posterior probability.
     def findMaximumPosteriorProbability(self):
         labelFunction = 'findMaximumPosteriorProbability'
+
+        if(not self.flagInitialized):
+            print('Error in {0}: instance is not initialized.'.format(labelFunction))
+            sys.exit()
 
         ## Maximize the likelihood. 
         ## __minimization_func is, roughly speaking, (-1) * likelihood.
@@ -1020,6 +1036,10 @@ class CLAUDE:
     def predict(self, x, \
                 precisionMatrix = None):
         labelFunction = 'predict'
+
+        if(not self.flagInitialized):
+            print('Error in {0}: instance is not initialized.'.format(labelFunction))
+            sys.exit()
 
         if(isinstance(x, list) or isinstance(x, np.ndarray)):
             x0 = copy.deepcopy(x)
@@ -1127,12 +1147,20 @@ class CLAUDE:
     def calculatePosteriorProbability(self, precisionMatrix):
         labelFunction = 'calculatePosteriorProbability'
 
+        if(not self.flagInitialized):
+            print('Error in {0}: instance is not initialized.'.format(labelFunction))
+            sys.exit()
+
         ## To be implemented to use any prior probability distribution in the future.
         priorProbability = 1.0
         return self.calculateLikelihood(precisionMatrix) + np.log(priorProbability)
 
     def calculateLikelihood(self, precisionMatrix):
         labelFunction = 'calculateLikelihood'
+
+        if(not self.flagInitialized):
+            print('Error in {0}: instance is not initialized.'.format(labelFunction))
+            sys.exit()
 
         value = 0.0
         for idx in range(self.nAvailablePattern):
@@ -1239,6 +1267,10 @@ class CLAUDE:
                                            precisionMatrix = None):
         labelFunction = 'calculateLinearRegressionParameter'
 
+        if(not self.flagInitialized):
+            print('Error in {0}: instance is not initialized.'.format(labelFunction))
+            sys.exit()
+
         if (precisionMatrix is None):
             precisionMatrix = self.precisionMatrixMax
 
@@ -1260,6 +1292,10 @@ class CLAUDE:
     ###---------------------------------------------------------------------------
     def updateCovarianceMatrix(self,x,y):
         labelFunction = 'updateCovarianceMatrix'
+
+        if(not self.flagInitialized):
+            print('Error in {0}: instance is not initialized.'.format(labelFunction))
+            sys.exit()
 
         for idx in range(self.dimensionTarget):
             if (np.isnan(y[idx])):
@@ -1334,6 +1370,9 @@ class CLAUDE:
     ### Transition of precision matrix.
     def transitionPrecisionMatrix(self, precisionMatrix):
         labelFunction = 'transitionPrecisionMatrix'
+        if(not self.flagInitialized):
+            print('Error in {0}: instance is not initialized.'.format(labelFunction))
+            sys.exit()
         # Posterior probability.
         postProb = self.calculatePosteriorProbability(precisionMatrix)
         precisionMatrixNext = copy.deepcopy(precisionMatrix)
@@ -1363,6 +1402,9 @@ class CLAUDE:
     ### Deviating precision matrix from a given precision matrix.
     def deviatePrecisionMatrix(self, precisionMatrix, iComponent):
         labelFunction = 'deviatePrecisionMatrix'
+        if(not self.flagInitialized):
+            print('Error in {0}: instance is not initialized.'.format(labelFunction))
+            sys.exit()
         j1, j2 = self.mapDeserialize[iComponent]
         j1 += self.dimensionDescriptor
         dz = (np.random.rand() - 0.5) * self.widthMonteCarlo[iComponent]
@@ -1377,6 +1419,9 @@ class CLAUDE:
     ###---------------------------------------------------------------------------
     def acquisitionFunction(self, x):
         labelFunction = 'acquisitionFunction'
+        if(not self.flagInitialized):
+            print('Error in {0}: instance is not initialized.'.format(labelFunction))
+            sys.exit()
         precisionMatrix = copy.deepcopy(self.precisionMatrixMax)
         zMean = self.__serializePrecisionMatrix(precisionMatrix)
         z = copy.deepcopy(zMean)
