@@ -52,3 +52,4 @@ da.findMaximumPosteriorProbability()
 ```
 ## Reference
 [Y. Harashima, *et. al.*, Phys. Rev. Materials **5**, 013806 (2021).](https://journals.aps.org/prmaterials/abstract/10.1103/PhysRevMaterials.5.013806)
+[Y. Harashima, *et. al.*, arXiv:2408.08539 (2024).](https://doi.org/10.48550/arXiv.2408.08539)
