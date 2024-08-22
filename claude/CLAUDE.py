@@ -8,6 +8,16 @@ from scipy.linalg import inv, det
 import copy
 import time
 
+def dimList(l):
+    i = 0
+    ltmp = l
+    while True:
+        if(not isinstance(ltmp,list)):
+            break
+        ltmp = ltmp[0]
+        i += 1
+    return i
+
 ###---------------------------------------------------------------------------
 # Flag of debugging for posterior distribution of precision matrixes.
 # If True, precision matrix components are saved in the file.
@@ -241,47 +251,67 @@ class CLAUDE:
                 self.activeVariable[i,:self.dimensionDescriptor] = False
             ## Active variable(descriptor and target) for target variable.
             if (not (degreeActiveDescriptor is None)):
-                for degreeDescriptor,degreeTarget in degreeActiveDescriptor:
-                    found = False
-                    for i in range(self.dimensionDescriptor):
-                        if(degreeDescriptor == list(self.degreePolynomialDescriptor[i])):
-                            idxDescriptor = i
-                            found = True
-                            break
-                    if(not found):
-                        print('Error: {0}, degree of descriptor not found for active variable.'.format(labelFunction))
-                        sys.exit()
-                    found = False
-                    for i in range(self.dimensionTarget):
-                        if(degreeTarget == list(self.degreePolynomialTarget[i])):
-                            idxTarget = i
-                            found = True
-                            break
-                    if(not found):
-                        print('Error: {0}, degree of target not found for active variable.'.format(labelFunction))
-                        sys.exit()
+                if (dimList(degreeActiveDescriptor) == 1):
+                    idxDescriptor = degreeActiveDescriptor[0]
+                    idxTarget = degreeActiveDescriptor[1]
                     self.activeVariable[idxTarget,idxDescriptor] = True
+                elif (dimList(degreeActiveDescriptor) == 2):
+                    for i in range(len(degreeActiveDescriptor)):
+                        idxDescriptor = degreeActiveDescriptor[i][0]
+                        idxTarget = degreeActiveDescriptor[i][1]
+                        self.activeVariable[idxTarget,idxDescriptor] = True
+                else:
+                    for degreeDescriptor,degreeTarget in degreeActiveDescriptor:
+                        found = False
+                        for i in range(self.dimensionDescriptor):
+                            if(degreeDescriptor == list(self.degreePolynomialDescriptor[i])):
+                                idxDescriptor = i
+                                found = True
+                                break
+                        if(not found):
+                            print('Error: {0}, degree of descriptor not found for active variable.'.format(labelFunction))
+                            sys.exit()
+                        found = False
+                        for i in range(self.dimensionTarget):
+                            if(degreeTarget == list(self.degreePolynomialTarget[i])):
+                                idxTarget = i
+                                found = True
+                                break
+                        if(not found):
+                            print('Error: {0}, degree of target not found for active variable.'.format(labelFunction))
+                            sys.exit()
+                        self.activeVariable[idxTarget,idxDescriptor] = True
             if (not (degreeInactiveDescriptor is None)):
-                for degreeDescriptor,degreeTarget in degreeInactiveDescriptor:
-                    found = False
-                    for i in range(self.dimensionDescriptor):
-                        if(degreeDescriptor == list(self.degreePolynomialDescriptor[i])):
-                            idxDescriptor = i
-                            found = True
-                            break
-                    if(not found):
-                        print('Error: {0}, degree of descriptor not found for inactive variable.'.format(labelFunction))
-                        sys.exit()
-                    found = False
-                    for i in range(self.dimensionTarget):
-                        if(degreeTarget == list(self.degreePolynomialTarget[i])):
-                            idxTarget = i
-                            found = True
-                            break
-                    if(not found):
-                        print('Error: {0}, degree of target not found for inactive variable.'.format(labelFunction))
-                        sys.exit()
+                if (dimList(degreeInactiveDescriptor) == 1):
+                    idxDescriptor = degreeInactiveDescriptor[0]
+                    idxTarget = degreeInactiveDescriptor[1]
                     self.activeVariable[idxTarget,idxDescriptor] = False
+                elif (dimList(degreeInactiveDescriptor) == 2):
+                    for i in range(len(degreeInactiveDescriptor)):
+                        idxDescriptor = degreeInactiveDescriptor[i][0]
+                        idxTarget = degreeInactiveDescriptor[i][1]
+                        self.activeVariable[idxTarget,idxDescriptor] = False
+                else:
+                    for degreeDescriptor,degreeTarget in degreeInactiveDescriptor:
+                        found = False
+                        for i in range(self.dimensionDescriptor):
+                            if(degreeDescriptor == list(self.degreePolynomialDescriptor[i])):
+                                idxDescriptor = i
+                                found = True
+                                break
+                        if(not found):
+                            print('Error: {0}, degree of descriptor not found for inactive variable.'.format(labelFunction))
+                            sys.exit()
+                        found = False
+                        for i in range(self.dimensionTarget):
+                            if(degreeTarget == list(self.degreePolynomialTarget[i])):
+                                idxTarget = i
+                                found = True
+                                break
+                        if(not found):
+                            print('Error: {0}, degree of target not found for inactive variable.'.format(labelFunction))
+                            sys.exit()
+                        self.activeVariable[idxTarget,idxDescriptor] = False
             if (not (degreeActiveTarget is None)):
                 for degreeTarget1,degreeTarget2 in degreeActiveTarget:
                     found = False
