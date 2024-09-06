@@ -59,7 +59,7 @@ idxMax2 = np.argmax(aq[:,1])
 da.saveModelParameterToFile()
 da.saveCovarianceMatrixToFile()
 ```
-![Results from the data assimilation](image/predictioncurve.pdf)
+![Results from the data assimilation](https://github.com/yy-harashima/CLAUDE/blob/main/image/predictioncurve.pdf)
 
 ### Initialization 
 ```
