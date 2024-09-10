@@ -1,5 +1,5 @@
 # CLAUDE
-Covariance Linkage Assimilation method for Unobserved Data Exploration
+**C**ovariance **L**inkage **A**ssimilation method for **U**nobserved **D**ata **E**xploration
 ## Installation
 Installation by pip from github.
 ```
