@@ -183,5 +183,5 @@ A numpy array containing values of acquisition function.
 The array shape is `(nMesh, nTarget)`
 
 ## Reference
-[Y. Harashima, *et. al.*, Phys. Rev. Materials **5**, 013806 (2021).](https://journals.aps.org/prmaterials/abstract/10.1103/PhysRevMaterials.5.013806)  
-[Y. Harashima, *et. al.*, arXiv:2408.08539 (2024).](https://doi.org/10.48550/arXiv.2408.08539)
+[Y. Harashima, *et. al.*, Phys. Rev. Materials **5**, 013806 (2021).](https://link.aps.org/doi/10.1103/PhysRevMaterials.5.013806)  
+[Y. Harashima, *et. al.*, Phys. Rev. Materials **9**, 093803 (2025).](https://link.aps.org/doi/10.1103/8tjv-wtx5)
